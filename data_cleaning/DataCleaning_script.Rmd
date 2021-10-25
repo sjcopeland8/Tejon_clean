@@ -15,13 +15,14 @@ library(plyr)
 ```
 
 ## Dataset 1 -- Tick Density
-
+--> final version of exported datafile =  "Tejon_MeanComparisons_Dataset.xlsx"
 Step 1. Merge data
 
 ```{r}
-threeyrs <- read_csv("raw_data/Total_Ticks_2016_to_2018.csv")
+
+threeyrs <- read_csv("~/Google Drive/Tejon_clean/raw_data/Total_Ticks_2016_to_2018.csv")
 dim(threeyrs)
-oneyr <- read_csv("raw_data/Tick_19.csv")
+oneyr <- read_csv("~/Google Drive/Tejon_clean/raw_data/Tick_19.csv")
 dim(oneyr)
 # get rid of survery column in threeyr since it wasn't completed in oneyrs 
 ## Maybe double check survey number doesn't matter
@@ -65,7 +66,15 @@ tick$plot <- as.factor(tick$plot)
 
 # change it to Tick cause I had further analyses labeled as Tick vs tick
 Tick <- tick
+
+# write to an excel sheet
+write.xlsx(Tick, file = "Tejon_MeanComparisons_Dataset.xlsx",
+          col.names = TRUE)
 ```
+
+## Dataset 2 -- Tick, Mammal, Climate Data
+--> final version of exported file = "Tejon_MixedModels_Dataset.xlsx"
+
 **OPTIONAL**: data not needed for these analyses but maybe down the road
 
 Step 3. Add additional data to tick counts
@@ -88,14 +97,14 @@ Tick$log_total <- log(Tick$total + 1)
 ## b. climate
 
 ############## temperature ##############
-temp <- read_csv("raw_data/Tejon_temperature_02022021.csv")
+temp <- read_csv("~/Google Drive/Tejon_clean/raw_data/Tejon_temperature_02022021.csv")
 temp.tick <- merge(Tick, temp)
 dim(temp.tick) # 1449, 14 (added meanmaxF, meanminF, station)
 #View(temp.tick)
 
 ############## precipitation ##############
 
-precip <- read_csv("raw_data/tejon_tick_climate_10162020.csv")
+precip <- read_csv("~/Google Drive/Tejon_clean/raw_data/tejon_tick_climate_10162020.csv")
 
 precip_subset <- subset(precip, select = c(1:5,19,20))
 names(precip_subset) <- tolower(names(precip_subset))
@@ -115,7 +124,7 @@ dim(temp.tick.prep.short) # 1395, 16
 
 ############## mammal metrics ############## 
 
-mam <- read_csv("raw_data/tejon_mammal_02022021.csv")
+mam <- read_csv("~/Google Drive/Tejon_clean/raw_data/tejon_mammal_02022021.csv")
 names(mam) <- tolower(names(mam))
 
 climate.mam <- join(temp.tick.prep.short, mam)
@@ -130,7 +139,7 @@ dim(climate.mam.short) #1395, 19 # same amount of observations after climate dat
 
 ############## pop estimates ############## 
 
-pop_estimates <-read_csv("raw_data/tejon_mamliz_popestimates.csv")
+pop_estimates <-read_csv("~/Google Drive/Tejon_clean/raw_data/tejon_mamliz_popestimates.csv")
 dim(pop_estimates) #27 5
 
 climate.mam.combo <- join(climate.mam.short, pop_estimates)
