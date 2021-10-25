@@ -1,0 +1,261 @@
+---
+title: "Data cleaning script"
+author: "sbsambado"
+date: "10/25/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(readr)
+library(xlsx)
+library(dplyr)
+library(plyr)
+```
+
+## Dataset 1 -- Tick Density
+
+Step 1. Merge data
+
+```{r}
+threeyrs <- read_csv("raw_data/Total_Ticks_2016_to_2018.csv")
+dim(threeyrs)
+oneyr <- read_csv("raw_data/Tick_19.csv")
+dim(oneyr)
+# get rid of survery column in threeyr since it wasn't completed in oneyrs 
+## Maybe double check survey number doesn't matter
+threeyrs <- subset(threeyrs, select = -c(3))
+
+# make sure names are the same
+## 2016 - 2018
+names(threeyrs) <- tolower(names(threeyrs))
+
+# change column names
+names(threeyrs)[6] <- "total"
+names(threeyrs)[7] <- "deoc"
+names(threeyrs)[8] <- "ipac"
+names(threeyrs)[9] <- "deva"
+names(threeyrs)[10] <- "other"
+
+## 2019
+# make sure names are the same
+names(oneyr) <- tolower(names(oneyr))
+
+# change column names
+names(oneyr)[6] <- "total"
+names(oneyr)[7] <- "deoc"
+names(oneyr)[8] <- "ipac"
+names(oneyr)[9] <- "deva"
+names(oneyr)[10] <- "other"
+
+
+tick <- rbind(threeyrs, oneyr)
+
+```
+
+Step 2. Check data structures
+```{r}
+dim(tick) # 1449 11
+str(tick)
+
+tick$year <- as.numeric(tick$year)
+tick$site <- as.factor(tick$site)
+tick$plot <- as.factor(tick$plot)
+
+# change it to Tick cause I had further analyses labeled as Tick vs tick
+Tick <- tick
+```
+**OPTIONAL**: data not needed for these analyses but maybe down the road
+
+Step 3. Add additional data to tick counts
+~ Lots of movin' and groovin here. Trying to add multiple datasets together while avoiding duplication and too much observation lost ~
+
+a. log of tick
+b. climate (temp, precip) 
+c. vertebrate (species richness, diversity, pop estimates)
+d. celcius
+e. temperature difference
+f. elevation
+g. rain year
+h. plotID
+
+```{r}
+## a. log of tick
+# log transform data
+Tick$log_total <- log(Tick$total + 1)
+
+## b. climate
+
+############## temperature ##############
+temp <- read_csv("raw_data/Tejon_temperature_02022021.csv")
+temp.tick <- merge(Tick, temp)
+dim(temp.tick) # 1449, 14 (added meanmaxF, meanminF, station)
+#View(temp.tick)
+
+############## precipitation ##############
+
+precip <- read_csv("raw_data/tejon_tick_climate_10162020.csv")
+
+precip_subset <- subset(precip, select = c(1:5,19,20))
+names(precip_subset) <- tolower(names(precip_subset))
+temp.tick.precip <- plyr::join(temp.tick, precip_subset)
+dim(temp.tick.precip) #2025, 16 (added precip (in), precip (mm))
+names(temp.tick.precip)
+# seems like data got duplicated let's fix that
+
+# best way is to remove duplicate rows which I lose ~50 observations but I think that is a better way to do it then extract unique elements by columns since alot of these observations are repetitive
+
+temp.tick.prep.short <- temp.tick.precip %>%
+  distinct()
+
+dim(temp.tick.prep.short) # 1395, 16
+
+## c. vertebrate
+
+############## mammal metrics ############## 
+
+mam <- read_csv("raw_data/tejon_mammal_02022021.csv")
+names(mam) <- tolower(names(mam))
+
+climate.mam <- join(temp.tick.prep.short, mam)
+dim(climate.mam) # 1895, 19 (added cum_mammal, shan_mammal, rich_mammal)
+
+# remove duplicate rows
+
+climate.mam.short <- climate.mam %>%
+  distinct()
+dim(climate.mam.short) #1395, 19 # same amount of observations after climate dataset
+
+
+############## pop estimates ############## 
+
+pop_estimates <-read_csv("raw_data/tejon_mamliz_popestimates.csv")
+dim(pop_estimates) #27 5
+
+climate.mam.combo <- join(climate.mam.short, pop_estimates)
+dim(climate.mam.combo) # 1395   21 (added liz estimates, mam estimates)
+names(climate.mam.combo)[20] <- "liz_estimates"
+
+dim(climate.mam.combo) # 1395   21
+names(climate.mam.combo)
+
+## d. celcius
+climate.mam.combo$mean_maxC <- (climate.mam.combo$mean_maxF - 32)*(5/9)
+climate.mam.combo$mean_minC <- (climate.mam.combo$mean_minF - 32)*(5/9)
+
+
+## e. temperature difference 
+climate.mam.combo$tempdifF <- (climate.mam.combo$mean_maxF - climate.mam.combo$mean_minF)
+climate.mam.combo$tempdifC <- (climate.mam.combo$mean_maxC - climate.mam.combo$mean_minC)
+
+
+## f. elevation
+  climate.mam.combo$elevation <- climate.mam.combo$station
+  climate.mam.combo$elevation[climate.mam.combo$station == "Lebec"] <- 1089.7
+  climate.mam.combo$elevation[climate.mam.combo$station == "Loraine"] <- 1290.8
+  climate.mam.combo$elevation[climate.mam.combo$station == "Chuchupate"] <- 1493.5
+
+# g. rain year
+  # this is a dumb way but it is what it is
+  climate.mam.combo$rain_year <- as.numeric(climate.mam.combo$year)
+  climate.mam.combo$rain_year[climate.mam.combo$year == 2016 & climate.mam.combo$month == 'April'] <- "2015/2016"
+  climate.mam.combo$rain_year[climate.mam.combo$year == 2016 & climate.mam.combo$month == 'May'] <- "2015/2016"
+  climate.mam.combo$rain_year[climate.mam.combo$year == 2016 & climate.mam.combo$month == 'June'] <- "2015/2016"
+  climate.mam.combo$rain_year[climate.mam.combo$year == 2016 & climate.mam.combo$month == 'July'] <- "2015/2016"
+  climate.mam.combo$rain_year[climate.mam.combo$year == 2016 & climate.mam.combo$month == 'August'] <- "2015/2016"
+  climate.mam.combo$rain_year[climate.mam.combo$year == 2016 & climate.mam.combo$month == 'September'] <- "2015/2016"
+  climate.mam.combo$rain_year[climate.mam.combo$year == 2016 & climate.mam.combo$month == 'October'] <- "2015/2016"
+  
+  climate.mam.combo$rain_year[climate.mam.combo$year == 2016 & climate.mam.combo$month == 'November'] <- "2016/2017"
+  climate.mam.combo$rain_year[climate.mam.combo$year == 2016 & climate.mam.combo$month == 'December'] <- "2016/2017"
+  climate.mam.combo$rain_year[climate.mam.combo$year == 2017 & climate.mam.combo$month == 'January'] <- "2016/2017"
+  climate.mam.combo$rain_year[climate.mam.combo$year == 2017 & climate.mam.combo$month == 'February'] <- "2016/2017"
+  climate.mam.combo$rain_year[climate.mam.combo$year == 2017 & climate.mam.combo$month == 'March'] <- "2016/2017"
+  climate.mam.combo$rain_year[climate.mam.combo$year == 2017 & climate.mam.combo$month == 'April'] <- "2016/2017"
+  climate.mam.combo$rain_year[climate.mam.combo$year == 2017 & climate.mam.combo$month == 'May'] <- "2016/2017"
+  climate.mam.combo$rain_year[climate.mam.combo$year == 2017 & climate.mam.combo$month == 'June'] <- "2016/2017"
+  climate.mam.combo$rain_year[climate.mam.combo$year == 2017 & climate.mam.combo$month == 'July'] <- "2016/2017"
+  climate.mam.combo$rain_year[climate.mam.combo$year == 2017 & climate.mam.combo$month == 'August'] <- "2016/2017"
+  climate.mam.combo$rain_year[climate.mam.combo$year == 2017 & climate.mam.combo$month == 'September'] <- "2016/2017"
+  climate.mam.combo$rain_year[climate.mam.combo$year == 2017 & climate.mam.combo$month == 'October'] <- "2016/2017"
+  
+  climate.mam.combo$rain_year[climate.mam.combo$year == 2017 & climate.mam.combo$month == 'November'] <- "2017/2018"
+  climate.mam.combo$rain_year[climate.mam.combo$year == 2017 & climate.mam.combo$month == 'December'] <- "2017/2018"
+  climate.mam.combo$rain_year[climate.mam.combo$year == 2018 & climate.mam.combo$month == 'January'] <- "2017/2018"
+  climate.mam.combo$rain_year[climate.mam.combo$year == 2018 & climate.mam.combo$month == 'February'] <- "2017/2018"
+  climate.mam.combo$rain_year[climate.mam.combo$year == 2018 & climate.mam.combo$month == 'March'] <- "2017/2018"
+  climate.mam.combo$rain_year[climate.mam.combo$year == 2018 & climate.mam.combo$month == 'April'] <- "2017/2018"
+  climate.mam.combo$rain_year[climate.mam.combo$year == 2018 & climate.mam.combo$month == 'May'] <- "2017/2018"
+  climate.mam.combo$rain_year[climate.mam.combo$year == 2018 & climate.mam.combo$month == 'June'] <- "2017/2018"
+  climate.mam.combo$rain_year[climate.mam.combo$year == 2018 & climate.mam.combo$month == 'July'] <- "2017/2018"
+  climate.mam.combo$rain_year[climate.mam.combo$year == 2018 & climate.mam.combo$month == 'August'] <- "2017/2018"
+  climate.mam.combo$rain_year[climate.mam.combo$year == 2018 & climate.mam.combo$month == 'September'] <- "2017/2018"
+  climate.mam.combo$rain_year[climate.mam.combo$year == 2018 & climate.mam.combo$month == 'October'] <- "2017/2018"
+  
+  climate.mam.combo$rain_year[climate.mam.combo$year == 2018 & climate.mam.combo$month == 'November'] <- "2018/2019"
+  climate.mam.combo$rain_year[climate.mam.combo$year == 2018 & climate.mam.combo$month == 'December'] <- "2018/2019"
+  climate.mam.combo$rain_year[climate.mam.combo$year == 2019 & climate.mam.combo$month == 'January'] <- "2018/2019"
+  climate.mam.combo$rain_year[climate.mam.combo$year == 2019 & climate.mam.combo$month == 'February'] <- "2018/2019"
+  climate.mam.combo$rain_year[climate.mam.combo$year == 2019 & climate.mam.combo$month == 'March'] <- "2018/2019"
+  climate.mam.combo$rain_year[climate.mam.combo$year == 2019 & climate.mam.combo$month == 'April'] <- "2018/2019"
+  climate.mam.combo$rain_year[climate.mam.combo$year == 2019 & climate.mam.combo$month == 'May'] <- "2018/2019"
+  climate.mam.combo$rain_year[climate.mam.combo$year == 2019 & climate.mam.combo$month == 'June'] <- "2018/2019"
+  climate.mam.combo$rain_year[climate.mam.combo$year == 2019 & climate.mam.combo$month == 'July'] <- "2018/2019"
+  climate.mam.combo$rain_year[climate.mam.combo$year == 2019 & climate.mam.combo$month == 'August'] <- "2018/2019"
+  climate.mam.combo$rain_year[climate.mam.combo$year == 2019 & climate.mam.combo$month == 'September'] <- "2018/2019"
+  climate.mam.combo$rain_year[climate.mam.combo$year == 2019 & climate.mam.combo$month == 'October'] <- "2018/2019"
+  
+  climate.mam.combo$rain_year[climate.mam.combo$year == 2019 & climate.mam.combo$month == 'November'] <- "2019/2020"
+  climate.mam.combo$rain_year[climate.mam.combo$year == 2019 & climate.mam.combo$month == 'December'] <- "2019/2020"
+
+## h. plotID
+climate.mam.combo <- transform(climate.mam.combo, plotidname = as.character(interaction(site, plot,block, drop = TRUE)))
+climate.mam.combo <- transform(climate.mam.combo, plotID = as.numeric(interaction(site, plot,block, drop = TRUE)))
+str(climate.mam.combo) # 1395 observations, 26 variables (added plotidname, plotID)
+
+
+```
+
+Step 4. Tidy data (will need to upload optional data from step 3)
+
+```{r}
+# put data in right format
+str(climate.mam.combo)
+
+climate.mam.combo$year <- as.factor(climate.mam.combo$year)
+climate.mam.combo$block <- as.factor(climate.mam.combo$block)
+climate.mam.combo$plotID <- as.factor(climate.mam.combo$plotID)
+climate.mam.combo$rain_year <- as.factor(climate.mam.combo$rain_year)
+climate.mam.combo$elevation <- as.numeric(climate.mam.combo$elevation)
+
+climate.mam.combo$month <- factor(climate.mam.combo$month, 
+                        levels = c('January', 'February', 'March',
+                                   'April', 'May', 'June', 'July',
+                                   'August', 'September', 'October',
+                                   'November', 'December'))
+climate.mam.combo$site <- factor(climate.mam.combo$site, 
+                    levels = c('Arid', 'Intermediate', 'Mesic'))
+
+climate.mam.combo$plot <- factor(climate.mam.combo$plot, 
+                    levels = c('Open', 'Partial', 'Total'))
+
+# rename precip columns
+names(climate.mam.combo)[15] <- "precip_in"
+names(climate.mam.combo)[16] <- "precip_mm"
+
+```
+
+Step 5. Final data set to use for analyses
+--> final version of exported file = "Tejon_MixedModels_Dataset.xlsx"
+```{r}
+# Finally, the final dataset for GLMMS
+FINAL <- climate.mam.combo
+str(FINAL) # 1395 observations, 30 variables
+
+# write to an excel sheet
+write.xlsx(FINAL, file = "Tejon_MixedModels_Dataset.xlsx",
+           col.names = TRUE, row.names = FALSE)
+
+```
+
