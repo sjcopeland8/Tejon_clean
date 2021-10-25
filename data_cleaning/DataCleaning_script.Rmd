@@ -12,6 +12,9 @@ library(readr)
 library(xlsx)
 library(dplyr)
 library(plyr)
+library(vegan)
+library(Rcapture)
+
 ```
 
 ## Dataset 1 -- Tick Density
@@ -266,5 +269,659 @@ str(FINAL) # 1395 observations, 30 variables
 write.xlsx(FINAL, file = "Tejon_MixedModels_Dataset.xlsx",
            col.names = TRUE, row.names = FALSE)
 
+```
+
+
+
+### Additional analyses that were used to make input variables for glmms
+
+#### Population estimates for lizards and mammals
+
+Original datasets I was given: `Lizard_Counts_TREE` for lizards and `2018_smammals` and `Small_mammal_captures_19`
+
+From those, I created an excel sheet called `tejon_mamliz_popestimates` that I made based on the analyses in lizard estimates and mammal estimates. Yes, I know this could have been done with a for loop but couldn't get my brain to think about it. This excel sheet is used to build the full data sheet with climate and tick counts
+
+Step 1. Upload & tidy data
+```{r data sheets for pop estimates}
+# Used these data sheets to calculate pop estimates. All calculations used to make population estimates can be found in the dataset `tejon_mamliz_popestimates`.
+### mammals 
+mamcounts <- read_csv("~/Google Drive/Tejon_clean/raw_data/mammal_counts_02182021.csv")
+dim(mamcounts) # 229   9
+
+#str(mamcounts)
+mamcounts$day1 <- as.numeric(mamcounts$day1)
+mamcounts$day2 <- as.numeric(mamcounts$day2)
+mamcounts$day3 <- as.numeric(mamcounts$day3)
+mamcounts$site <- as.factor(mamcounts$site)
+mamcounts$plot <- as.factor(mamcounts$plot)
+mamcounts$block <- as.numeric(mamcounts$block)
+#str(mamcounts)
+
+### lizards
+lizcounts <- read_csv("~/Google Drive/Tejon_clean/raw_data/lizardcounts_02172021.csv")
+dim(lizcounts) # 1745 , 10
+names(lizcounts) <- tolower(names(lizcounts))
+
+#str(lizcounts)
+lizcounts$day1 <- as.numeric(lizcounts$day1)
+lizcounts$day2 <- as.numeric(lizcounts$day2)
+lizcounts$day3 <- as.numeric(lizcounts$day3)
+lizcounts$site <- as.factor(lizcounts$site)
+lizcounts$plot <- as.factor(lizcounts$plot)
+lizcounts$block <- as.numeric(lizcounts$block)
+#str(lizcounts)
+
+```
+
+
+Step 2. Lizard population estimates
+
+```{r lizard estimates}
+AridO <- lizcounts %>%
+  filter(site == "Arid", plot =="Open", block == 1) %>%
+  select(day1, day2, day3)
+  
+abundance0 = closedp.t(AridO, dfreq = FALSE, dtype="hist") 
+models <- as.data.frame(abundance0$results)
+models <- models[order(models$BIC), ]
+
+models[1,1] # select total abundance 
+
+# ARID OPEN BLOCK 1 = 51.35882
+
+AridO <- lizcounts %>%
+  filter(site == "Arid", plot =="Open", block == 2) %>%
+  select(day1, day2, day3)
+  
+abundance0 = closedp.t(AridO, dfreq = FALSE, dtype="hist") 
+models <- as.data.frame(abundance0$results)
+models <- models[order(models$BIC), ]
+
+models[1,1] # select total abundance 
+
+# ARID OPEN BLOCK 2 = 60.5687
+
+AridO <- lizcounts %>%
+  filter(site == "Arid", plot =="Open", block == 3) %>%
+  select(day1, day2, day3)
+  
+abundance0 = closedp.t(AridO, dfreq = FALSE, dtype="hist") 
+models <- as.data.frame(abundance0$results)
+models <- models[order(models$BIC), ]
+
+models[1,1] # select total abundance 
+
+# ARID OPEN BLOCK 3 = 82.54301
+
+
+
+##########################################################################
+AridP <- lizcounts %>%
+  filter(site == "Arid", plot =="Partial", block == 1) %>%
+  select(day1, day2, day3)
+  
+abundanceP = closedp.t(AridP, dfreq = FALSE, dtype="hist") 
+models <- as.data.frame(abundanceP$results)
+models <- models[order(models$BIC), ]
+
+models[1,1] # select total abundance 
+
+## ARID PARTIAL Block 1 = 73.4186
+
+AridP <- lizcounts %>%
+  filter(site == "Arid", plot =="Partial", block == 2) %>%
+  select(day1, day2, day3)
+  
+abundanceP = closedp.t(AridP, dfreq = FALSE, dtype="hist") 
+models <- as.data.frame(abundanceP$results)
+models <- models[order(models$BIC), ]
+
+models[1,1] # select total abundance 
+
+## ARID PARTIAL Block 2 = 72.96941
+
+AridP <- lizcounts %>%
+  filter(site == "Arid", plot =="Partial", block == 3) %>%
+  select(day1, day2, day3)
+  
+abundanceP = closedp.t(AridP, dfreq = FALSE, dtype="hist") 
+models <- as.data.frame(abundanceP$results)
+models <- models[order(models$BIC), ]
+
+models[1,1] # select total abundance 
+
+## ARID PARTIAL Block 3 = 69.2156
+
+
+##########################################################################
+
+AridT <- lizcounts %>%
+  filter(site == "Arid", plot =="Total", block == 1) %>%
+  select(day1, day2, day3)
+  
+abundanceT = closedp.t(AridT, dfreq = FALSE, dtype="hist") 
+models <- as.data.frame(abundanceT$results)
+models <- models[order(models$BIC), ]
+
+models[1,1] # select total abundance 
+
+## ARID TOTALBLOCK 1 = 67.28581
+
+AridT <- lizcounts %>%
+  filter(site == "Arid", plot =="Total", block == 2) %>%
+  select(day1, day2, day3)
+  
+abundanceT = closedp.t(AridT, dfreq = FALSE, dtype="hist") 
+models <- as.data.frame(abundanceT$results)
+models <- models[order(models$BIC), ]
+
+models[1,1] # select total abundance 
+
+## ARID TOTALBLOCK 2 = 60.0097
+
+AridT <- lizcounts %>%
+  filter(site == "Arid", plot =="Total", block == 3) %>%
+  select(day1, day2, day3)
+  
+abundanceT = closedp.t(AridT, dfreq = FALSE, dtype="hist") 
+models <- as.data.frame(abundanceT$results)
+models <- models[order(models$BIC), ]
+
+models[1,1] # select total abundance 
+
+## ARID TOTALBLOCK 3 = 88.44651
+
+
+##############################################################################
+##############################################################################
+##############################################################################
+
+
+IntermediateO <- lizcounts %>%
+  filter(site == "Intermediate", plot =="Open", block == 1) %>%
+  select(day1, day2, day3)
+  
+abundanceO = closedp.t(IntermediateO, dfreq = FALSE, dtype="hist") 
+models <- as.data.frame(abundanceO$results)
+models <- models[order(models$BIC), ]
+
+models[1,1] # select total abundance 
+
+## Intermediate OPEN BlOCK 1 = 129.3622
+
+IntermediateO <- lizcounts %>%
+  filter(site == "Intermediate", plot =="Open", block == 2) %>%
+  select(day1, day2, day3)
+  
+abundanceO = closedp.t(IntermediateO, dfreq = FALSE, dtype="hist") 
+models <- as.data.frame(abundanceO$results)
+models <- models[order(models$BIC), ]
+
+models[1,1] # select total abundance 
+
+## Intermediate OPEN BlOCK 2 = 84.6362
+
+IntermediateO <- lizcounts %>%
+  filter(site == "Intermediate", plot =="Open", block == 3) %>%
+  select(day1, day2, day3)
+  
+abundanceO = closedp.t(IntermediateO, dfreq = FALSE, dtype="hist") 
+models <- as.data.frame(abundanceO$results)
+models <- models[order(models$BIC), ]
+
+models[1,1] # select total abundance 
+
+## Intermediate OPEN BlOCK 3 = 207.9784
+
+##########################################################################
+IntermediateP <- lizcounts %>%
+  filter(site == "Intermediate", plot =="Partial", block == 1) %>%
+  select(day1, day2, day3) %>%
+  na.omit(lizardcounts)
+  
+abundanceP = closedp.t(IntermediateP, dfreq = FALSE, dtype="hist") 
+models <- as.data.frame(abundanceP$results)
+models <- models[order(models$BIC), ]
+
+models[1,1] # select total abundance 
+
+## Intermediate PARTIAL BLOCK 1 = 133.5039
+
+IntermediateP <- lizcounts %>%
+  filter(site == "Intermediate", plot =="Partial", block == 2) %>%
+  select(day1, day2, day3)
+  
+abundanceP = closedp.t(IntermediateP, dfreq = FALSE, dtype="hist") 
+models <- as.data.frame(abundanceP$results)
+models <- models[order(models$BIC), ]
+
+models[1,1] # select total abundance 
+
+## Intermediate PARTIAL BLOCK 2 = 47.43047
+
+IntermediateP <- lizcounts %>%
+  filter(site == "Intermediate", plot =="Partial", block == 3) %>%
+  select(day1, day2, day3)
+  
+abundanceP = closedp.t(IntermediateP, dfreq = FALSE, dtype="hist") 
+models <- as.data.frame(abundanceP$results)
+models <- models[order(models$BIC), ]
+
+models[1,1] # select total abundance 
+
+## Intermediate PARTIAL BLOCK 3 = 162.613
+
+##########################################################################
+
+IntermediateT <- lizcounts %>%
+  filter(site == "Intermediate", plot =="Total", block == 1) %>%
+  select(day1, day2, day3)
+  
+abundanceT = closedp.t(IntermediateT, dfreq = FALSE, dtype="hist") 
+models <- as.data.frame(abundanceT$results)
+models <- models[order(models$BIC), ]
+
+models[1,1] # select total abundance , lowest BIC had negative value with Mbh so I chose next best model Mb abundance = 137.9494
+
+## Intermediate TOTAL BLOCK 1 = 398.0468
+
+IntermediateT <- lizcounts %>%
+  filter(site == "Intermediate", plot =="Total", block == 2) %>%
+  select(day1, day2, day3)
+  
+abundanceT = closedp.t(IntermediateT, dfreq = FALSE, dtype="hist") 
+models <- as.data.frame(abundanceT$results)
+models <- models[order(models$BIC), ]
+
+models[1,1] # select total abundance 
+
+## Intermediate TOTAL BLOCK 2 = 84.5119
+
+IntermediateT <- lizcounts %>%
+  filter(site == "Intermediate", plot =="Total", block == 3) %>%
+  select(day1, day2, day3)
+  
+abundanceT = closedp.t(IntermediateT, dfreq = FALSE, dtype="hist") 
+models <- as.data.frame(abundanceT$results)
+models <- models[order(models$BIC), ]
+
+models[1,1] # select total abundance 
+
+## Intermediate TOTAL BLOCK 3 = 176.55
+
+
+```
+
+Step 3. Mammal population estimates
+
+```{r mammal estimates }
+AridO <- mamcounts %>%
+  filter(site == "Arid", plot =="Open", block == 1) %>%
+  select(day1, day2, day3)
+  
+abundance0 = closedp.t(AridO, dfreq = FALSE, dtype="hist") 
+models <- as.data.frame(abundance0$results)
+models <- models[order(models$BIC), ]
+
+models[1,1] # select total abundance 
+
+## ARID OPEN Block 1 = 2
+
+AridO <- mamcounts %>%
+  filter(site == "Arid", plot =="Open", block == 2) %>%
+  select(day1, day2, day3)
+  
+abundance0 = closedp.t(AridO, dfreq = FALSE, dtype="hist") 
+models <- as.data.frame(abundance0$results)
+models <- models[order(models$BIC), ]
+
+models[1,1] # select total abundance 
+
+## ARID OPEN Block 2 = 5.236068
+
+AridO <- mamcounts %>%
+  filter(site == "Arid", plot =="Open", block == 3) %>%
+  select(day1, day2, day3)
+  
+abundance0 = closedp.t(AridO, dfreq = FALSE, dtype="hist") 
+models <- as.data.frame(abundance0$results)
+models <- models[order(models$BIC), ]
+
+models[1,1] # select total abundance 
+
+## ARID OPEN Block 3 = 2.618034
+
+##########################################################################
+AridP <- mamcounts %>%
+  filter(site == "Arid", plot =="Partial", block == 1) %>%
+  select(day1, day2, day3)
+  
+abundanceP = closedp.t(AridP, dfreq = FALSE, dtype="hist") 
+models <- as.data.frame(abundanceP$results)
+models <- models[order(models$BIC), ]
+
+models[1,1] # select total abundance 
+
+## ARID PARTIAL BLOCK 1= 15.51451
+AridP <- mamcounts %>%
+  filter(site == "Arid", plot =="Partial", block == 2) %>%
+  select(day1, day2, day3)
+  
+abundanceP = closedp.t(AridP, dfreq = FALSE, dtype="hist") 
+models <- as.data.frame(abundanceP$results)
+models <- models[order(models$BIC), ]
+
+models[1,1] # select total abundance , lowest BIC was negative so chose next lowest model M0
+
+## ARID PARTIAL BLOCK 2= 45.38767
+AridP <- mamcounts %>%
+  filter(site == "Arid", plot =="Partial", block == 3) %>%
+  select(day1, day2, day3)
+  
+abundanceP = closedp.t(AridP, dfreq = FALSE, dtype="hist") 
+models <- as.data.frame(abundanceP$results)
+models <- models[order(models$BIC), ]
+
+models[1,1] # select total abundance 
+
+## ARID PARTIAL BLOCK 3= estimates were in the 500000000 so I chose to omit this block 
+
+##########################################################################
+
+AridT <- mamcounts %>%
+  filter(site == "Arid", plot =="Total", block == 1) %>%
+  select(day1, day2, day3)
+  
+abundanceT = closedp.t(AridT, dfreq = FALSE, dtype="hist") 
+models <- as.data.frame(abundanceT$results)
+models <- models[order(models$BIC), ]
+
+models[1,1] # select total abundance 
+
+## ARID TOTAL block 1= 15.51451
+
+AridT <- mamcounts %>%
+  filter(site == "Arid", plot =="Total", block == 2) %>%
+  select(day1, day2, day3)
+  
+abundanceT = closedp.t(AridT, dfreq = FALSE, dtype="hist") 
+models <- as.data.frame(abundanceT$results)
+models <- models[order(models$BIC), ]
+
+models[1,1] # select total abundance 
+
+## ARID TOTAL block 2= 40.80791
+
+AridT <- mamcounts %>%
+  filter(site == "Arid", plot =="Total", block == 3) %>%
+  select(day1, day2, day3)
+  
+abundanceT = closedp.t(AridT, dfreq = FALSE, dtype="hist") 
+models <- as.data.frame(abundanceT$results)
+models <- models[order(models$BIC), ]
+
+models[1,1] # select total abundance 
+
+## ARID TOTAL block 3= 15.51451
+
+
+##############################################################################
+##############################################################################
+##############################################################################
+
+# no mammals trapped at block 1 intermediate open
+
+IntermediateO <- mamcounts %>%
+  filter(site == "Intermediate", plot =="Open", block == 2) %>%
+  select(day1, day2, day3)
+  
+abundanceO = closedp.t(IntermediateO, dfreq = FALSE, dtype="hist") 
+models <- as.data.frame(abundanceO$results)
+models <- models[order(models$BIC), ]
+
+models[1,1] # select total abundance 
+
+## Intermediate OPEN BLOCK 2 = 5.236068
+
+IntermediateO <- mamcounts %>%
+  filter(site == "Intermediate", plot =="Open", block == 3) %>%
+  select(day1, day2, day3)
+  
+abundanceO = closedp.t(IntermediateO, dfreq = FALSE, dtype="hist") 
+models <- as.data.frame(abundanceO$results)
+models <- models[order(models$BIC), ]
+
+models[1,1] # select total abundance 
+
+## Intermediate OPEN BLOCK 3 = estimates were in the 7e09 so I chose to omit this block 
+
+
+##########################################################################
+IntermediateP <- mamcounts %>%
+  filter(site == "Intermediate", plot =="Partial", block == 1) %>%
+  select(day1, day2, day3)
+  
+abundanceP = closedp.t(IntermediateP, dfreq = FALSE, dtype="hist") 
+models <- as.data.frame(abundanceP$results)
+models <- models[order(models$BIC), ]
+
+models[1,1] # select total abundance 
+
+## Intermediate PARTIAL BLOCK 1= 7.734787
+
+IntermediateP <- mamcounts %>%
+  filter(site == "Intermediate", plot =="Partial", block == 2) %>%
+  select(day1, day2, day3)
+  
+abundanceP = closedp.t(IntermediateP, dfreq = FALSE, dtype="hist") 
+models <- as.data.frame(abundanceP$results)
+models <- models[order(models$BIC), ]
+
+models[1,1] # select total abundance 
+
+## Intermediate PARTIAL BLOCK 2 = 2
+
+IntermediateP <- mamcounts %>%
+  filter(site == "Intermediate", plot =="Partial", block == 3) %>%
+  select(day1, day2, day3)
+  
+abundanceP = closedp.t(IntermediateP, dfreq = FALSE, dtype="hist") 
+models <- as.data.frame(abundanceP$results)
+models <- models[order(models$BIC), ]
+
+models[1,1] # select total abundance 
+
+## Intermediate PARTIAL BLOCK 1= estimates were in 700 so omitted this data
+
+##########################################################################
+
+IntermediateT <- mamcounts %>%
+  filter(site == "Intermediate", plot =="Total", block == 1) %>%
+  select(day1, day2, day3)
+  
+abundanceT = closedp.t(IntermediateT, dfreq = FALSE, dtype="hist") 
+models <- as.data.frame(abundanceT$results)
+models <- models[order(models$BIC), ]
+
+models[1,1] 
+
+## Intermediate TOTAL BLOCK 1= 	31.33333
+
+IntermediateT <- mamcounts %>%
+  filter(site == "Intermediate", plot =="Total", block == 2) %>%
+  select(day1, day2, day3)
+  
+abundanceT = closedp.t(IntermediateT, dfreq = FALSE, dtype="hist") 
+models <- as.data.frame(abundanceT$results)
+models <- models[order(models$BIC), ]
+
+models[1,1] 
+
+## Intermediate TOTAL BLOCK 2= 	estimates over 5 mil so omitted
+
+IntermediateT <- mamcounts %>%
+  filter(site == "Intermediate", plot =="Total", block == 3) %>%
+  select(day1, day2, day3)
+  
+abundanceT = closedp.t(IntermediateT, dfreq = FALSE, dtype="hist") 
+models <- as.data.frame(abundanceT$results)
+models <- models[order(models$BIC), ]
+
+models[1,1] 
+## Intermediate TOTAL BLOCK 1= 	2
+
+
+#############################################################################
+# MESIC
+#############################################################################
+#############################################################################
+
+MesicO <- mamcounts %>%
+  filter(site == "Mesic", plot =="Open", block == 1) %>%
+  select(day1, day2, day3)
+  
+abundanceO = closedp.t(MesicO, dfreq = FALSE, dtype="hist") 
+models <- as.data.frame(abundanceO$results)
+models <- models[order(models$BIC), ]
+
+models[1,1] # select total abundance 
+
+## Mesic OPEN BLOCK 1= 28.5
+
+MesicO <- mamcounts %>%
+  filter(site == "Mesic", plot =="Open", block == 2) %>%
+  select(day1, day2, day3)
+  
+abundanceO = closedp.t(MesicO, dfreq = FALSE, dtype="hist") 
+models <- as.data.frame(abundanceO$results)
+models <- models[order(models$BIC), ]
+
+models[1,1] # select total abundance 
+
+## Mesic OPEN BLOCK 2= 2
+
+MesicO <- mamcounts %>%
+  filter(site == "Mesic", plot =="Open", block == 3) %>%
+  select(day1, day2, day3)
+  
+abundanceO = closedp.t(MesicO, dfreq = FALSE, dtype="hist") 
+models <- as.data.frame(abundanceO$results)
+models <- models[order(models$BIC), ]
+
+models[1,1] # select total abundance 
+
+## Mesic OPEN BLOCK3 = 12.0847
+
+
+##########################################################################
+MesicP <- mamcounts %>%
+  filter(site == "Mesic", plot =="Partial", block == 1) %>%
+  select(day1, day2, day3)
+  
+abundanceP = closedp.t(MesicP, dfreq = FALSE, dtype="hist") 
+models <- as.data.frame(abundanceP$results)
+models <- models[order(models$BIC), ]
+
+models[1,1] # select total abundance 
+
+# MESIC PARTIAL BLOCK1 = 215.727
+
+MesicP <- mamcounts %>%
+  filter(site == "Mesic", plot =="Partial", block == 2) %>%
+  select(day1, day2, day3)
+  
+abundanceP = closedp.t(MesicP, dfreq = FALSE, dtype="hist") 
+models <- as.data.frame(abundanceP$results)
+models <- models[order(models$BIC), ]
+
+models[1,1] # select total abundance 
+
+# MESIC PARTIAL BLOCK 2= 15.51451
+
+MesicP <- mamcounts %>%
+  filter(site == "Mesic", plot =="Partial", block == 3) %>%
+  select(day1, day2, day3)
+  
+abundanceP = closedp.t(MesicP, dfreq = FALSE, dtype="hist") 
+models <- as.data.frame(abundanceP$results)
+models <- models[order(models$BIC), ]
+
+models[1,1] # select total abundance 
+
+# MESIC PARTIAL BLOCK = estimates were 10mil so omitted them
+
+##########################################################################
+
+MesicT <- mamcounts %>%
+  filter(site == "Mesic", plot =="Total", block == 1) %>%
+  select(day1, day2, day3)
+  
+abundanceT = closedp.t(MesicT, dfreq = FALSE, dtype="hist") 
+models <- as.data.frame(abundanceT$results)
+models <- models[order(models$BIC), ]
+
+models[1,1] # select total abundance # second best fit model is M0, since 1st best fit is -10 with Mb
+
+## Mesic TOTAL BLOCK 1 = 62.26667
+
+MesicT <- mamcounts %>%
+  filter(site == "Mesic", plot =="Total", block == 2) %>%
+  select(day1, day2, day3)
+  
+abundanceT = closedp.t(MesicT, dfreq = FALSE, dtype="hist") 
+models <- as.data.frame(abundanceT$results)
+models <- models[order(models$BIC), ]
+
+models[1,1] # select total abundance # second best fit model is M0, since 1st best fit is -10 with Mb
+
+## Mesic TOTAL BLOCK 2 = 7.854102
+
+MesicT <- mamcounts %>%
+  filter(site == "Mesic", plot =="Total", block == 3) %>%
+  select(day1, day2, day3)
+  
+abundanceT = closedp.t(MesicT, dfreq = FALSE, dtype="hist") 
+models <- as.data.frame(abundanceT$results)
+models <- models[order(models$BIC), ]
+
+models[1,1] # select total abundance # second best fit model is M0, since 1st best fit is -10 with Mb
+
+## Mesic TOTAL BLOCK 1 = 17.20092
+
+```
+#### Mammal metrics of Shannon richness and species diversity
+
+*Original datasets I was given: `2018_smammals` and `Small_mammal_captures_19`* 
+
+From those, I created excel sheets called `tejon_mammals1819_09022020` and `tejon_mammalcount_09032020`.
+
+
+```{r mammal metrics, warning=FALSE}
+# full dataset
+mammals <- read_csv("~/Google Drive/Tejon_clean/raw_data/tejon_mammals1819_09022020.csv")
+# subset for important
+mammal <-data.frame(mammals[,4:6],mammals[,9])
+
+
+# numeric dataframe for community analysis
+Count <- read_csv("~/Google Drive/Tejon_clean/raw_data/tejon_mammalcount_09032020.csv")
+
+# remove the arid with NAs, this will be the full dataset with species richenss and diversity added
+count <- Count[-4,]
+# keep only numeric data to run community analyses
+numeric <- count[,c(-1,-2,-9,-10)]
+# organize data into right forms
+count$plot <- factor(count$plot, 
+                        levels = c('open','partial','total'))
+# species richness
+sppr <- specnumber(numeric)
+# shannon diversity
+shannondiv <- diversity(numeric)
+# add species richness to count
+count$sppr<-specnumber(numeric)
+# add shannon diversity to count
+count$shannondiv <- diversity(numeric)
+
+aggregate(shannondiv ~plot, data = count, FUN = mean)
 ```
 
