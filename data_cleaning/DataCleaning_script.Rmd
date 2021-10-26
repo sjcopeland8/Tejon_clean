@@ -5,7 +5,7 @@ date: "10/25/2021"
 output: html_document
 ---
 
-```{r setup, include=FALSE}
+```{r setup, include=FALSE, message = FALSE, warning = FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(readr)
@@ -19,9 +19,9 @@ library(Rcapture)
 
 ## Dataset 1 -- Tick Density
 --> final version of exported datafile =  "Tejon_MeanComparisons_Dataset.xlsx"
-Step 1. Merge data
 
-```{r}
+Step 1. Merge data
+```{r merge data}
 
 threeyrs <- read_csv("~/Google Drive/Tejon_clean/raw_data/Total_Ticks_2016_to_2018.csv")
 dim(threeyrs)
@@ -56,10 +56,14 @@ names(oneyr)[10] <- "other"
 
 tick <- rbind(threeyrs, oneyr)
 
+## add plotID
+
+tick <- transform(tick, plotID = as.numeric(interaction(site, plot,block, drop = TRUE)))
+
 ```
 
 Step 2. Check data structures
-```{r}
+```{r check data structures}
 dim(tick) # 1449 11
 str(tick)
 
@@ -72,7 +76,7 @@ Tick <- tick
 
 # write to an excel sheet
 write.xlsx(Tick, file = "Tejon_MeanComparisons_Dataset.xlsx",
-          col.names = TRUE)
+          col.names = TRUE, row.names = FALSE)
 ```
 
 ## Dataset 2 -- Tick, Mammal, Climate Data
@@ -92,7 +96,7 @@ f. elevation
 g. rain year
 h. plotID
 
-```{r}
+```{r add additional data}
 ## a. log of tick
 # log transform data
 Tick$log_total <- log(Tick$total + 1)
@@ -231,7 +235,7 @@ str(climate.mam.combo) # 1395 observations, 26 variables (added plotidname, plot
 
 Step 4. Tidy data (will need to upload optional data from step 3)
 
-```{r}
+```{r tidy data}
 # put data in right format
 str(climate.mam.combo)
 
@@ -260,7 +264,7 @@ names(climate.mam.combo)[16] <- "precip_mm"
 
 Step 5. Final data set to use for analyses
 --> final version of exported file = "Tejon_MixedModels_Dataset.xlsx"
-```{r}
+```{r export file for analyses}
 # Finally, the final dataset for GLMMS
 FINAL <- climate.mam.combo
 str(FINAL) # 1395 observations, 30 variables
