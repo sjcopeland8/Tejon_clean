@@ -281,26 +281,14 @@ mod_2_3 <- glmer(deoc ~ site + year + offset(sampling_effort) + (1|month) + (1|p
 mod_2_4 <- glmer(deoc ~ site*year + offset(sampling_effort) + (1|month) + (1|plotID),
                  family = "poisson", 
                  data = Tick)
-
-#checking optimizers
-allFit(mod_2_4, verbose = F)
+#model failed to converge with max|grad| = 0.00985153 (tol = 0.002, component 1)
 
 #variance inflation factor - indicates moderate to high multicollinearity of the site, year and site:year 
 library(car)
 vif(mod_2_4)
 
-#model failed to converge with max|grad| = 0.00985153 (tol = 0.002, component 1)
-#using different optimizers provided similar results in terms of the likelihood of the data
-
-#residual plot
-plot(mod_2_4, which = 1, type = "pearson")
-
-plot(mod_2_4_2, which = 2, type = "pearson")
-
 #install.packages("brglm2")
 library(brglm2)
-
-
 
 mod_2_4_2 <- glmer (deoc ~ site*year + offset(sampling_effort) + (1|month) + (1|plotID),
                     family = "poisson",
@@ -309,16 +297,19 @@ mod_2_4_2 <- glmer (deoc ~ site*year + offset(sampling_effort) + (1|month) + (1|
 
 summary(mod_2_4_2)
 
-
+#checking optimizers
 library(dfoptim)
 library(optimx)
+allFit(mod_2_4, verbose = F)
+
+## including a BOBYQA optimization allows to model to converge. The result through a low difference in the negative log-likelihoods noted that different optimizers provided similar results in terms of the likelihood of the data 
 
 
 ## Compare Fixed Effects Models with random held constant
 
-AIC(mod_2_1, mod_2_2, mod_2_3, mod_2_4_2) # mod_4 lowest, but mod_3 also good
+AIC(mod_2_1, mod_2_2, mod_2_3, mod_2_4) # mod_4 lowest, but mod_3 also good
 
-anova(mod_2_3, mod_2_4_2) # mod4 better
+anova(mod_2_3, mod_2_4) # mod4 better
 
 ## With best fixed effects, let's change random to see what's best fit model 
 ## let's see about random effect
@@ -332,13 +323,13 @@ mod_2_6 <- glmer(deoc ~ site*year + offset(sampling_effort) +  (1|plotID),
                  family = "poisson", 
                  data = Tick)
 
-AIC(mod_2_4_2, mod_2_5, mod_2_6) # mod4 still better
+AIC(mod_2_4, mod_2_5, mod_2_6) # mod4 still better
 
 ## Best fit model for this question
-summary(mod_2_4_2)
+summary(mod_2_4)
 
 # marginal = fixed factors, conditional = both fixed and random
-r.squaredGLMM(mod_2_4_2) # marginal = .31, conditional = .98
+r.squaredGLMM(mod_2_4) # marginal = .31, conditional = .98
 
 
 
