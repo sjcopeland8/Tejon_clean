@@ -7,6 +7,8 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+
+### packages ###
 library(tidyverse)
 library(readr)
 library(ggpubr)
@@ -44,22 +46,25 @@ rotatexaxistheme <- theme(axis.text.x = element_text(angle = 90, size = 8, vjust
 
 ytitletheme <- theme(axis.title.y = element_text(face = 'bold', family = "Times New Roman", size = 12, vjust = 0.5))
 
+ytitletheme_bar <- theme(axis.title.y = element_text(face = 'bold', family = "Times New Roman", size = 12, vjust = 0.5))+
+  theme(ggtext::element_markdown())
+
 xtitletheme <- theme(axis.title.x = element_text(face = 'bold', family = "Times New Roman", size = 12, vjust = 0.5))
 
 axisnumberstheme <- theme(axis.text = element_text(family = "Times New Roman", size = 12))
 ```
 
-Figure 1 is the "artistic" rendering of the TREE set-up and location.
+### Figure 1 is the "artistic" rendering of the TREE set-up and location.###
 
 ### Figure 2 (a & b) ###
-bar_graph covering climate and herbivory differences, with standard deviations. 
+- bar_graph covering climate and herbivory differences, with standard deviations. 
 ```{r}
 Tick <- read_csv(here("data_analyses", "Tejon_MeanComparisons_Dataset.csv"))
 
 # omit 0s to make plots look nicer, but this may not be kosher
 Tick_no0 <- Tick[which(Tick$total != 0),]
 
-##### get sd and mean for each exclosure type over the data
+##### get sd and mean for each exclosure type over the data #####
 data_summary_herb <- function(data, varname, groupnames){
   require(plyr)
   summary_func <- function(x, col){
@@ -72,12 +77,12 @@ data_summary_herb <- function(data, varname, groupnames){
  return(data_sum)
 }
 
-df_herb <- data_summary(Tick, varname="total",groupnames="plot")
+df_herb <- data_summary_herb(Tick, varname="total",groupnames="plot")
 
-### results of function & new dataframe
+### results of function & new dataframe ###
 head(df_herb)
 
-#### bar graph plot of herbivory treatment 
+#### bar graph plot of herbivory treatment ####
 
 herb2 <- ggplot(df_herb, aes(x = plot, y = total, fill = plot)) +
   geom_bar(stat = "identity", color = "black", position = position_dodge()) +
@@ -98,7 +103,7 @@ herb2 <- ggplot(df_herb, aes(x = plot, y = total, fill = plot)) +
 
 herb2
 
-##### get sd and mean for each climate treatment over the data
+##### get sd and mean for each climate treatment over the data ####
 data_summary_climate <- function(data, varname, groupnames){
   require(plyr)
   summary_func <- function(x, col){
@@ -111,11 +116,11 @@ data_summary_climate <- function(data, varname, groupnames){
  return(data_sum)
 }
 
-df_climate <- data_summary(Tick, varname="total",groupnames="site")
+df_climate <- data_summary_climate(Tick, varname="total",groupnames="site")
 
 head(df_climate)
 
-#### bar graph plot of climate level
+#### bar graph plot of climate level ####
 clim2 <- ggplot(df_climate, aes(x = site, y = total, fill = site)) +
   geom_bar(stat = "identity", color = "black", position = position_dodge()) +
   theme_bw() +
@@ -134,7 +139,7 @@ clim2 <- ggplot(df_climate, aes(x = site, y = total, fill = site)) +
   axisnumberstheme
 
 clim2
-#### combine into one pannel
+#### combine into one pannel ####
 
 clim2 <- clim2 + theme(axis.title.y = element_blank()) + axisnumberstheme
 
@@ -142,19 +147,21 @@ herb_clim_2 <- ggarrange(herb2, clim2, common.legend = TRUE, legend = "right", n
 
 herb_clim_2
 
-###save figure
+### save figure ####
 ```
 
 ### Figure 3 (a & b###
-boxplot of deoc counts w/ significance visualizations
+- boxplot of deoc counts w/ significance visualizations
 
 ```{r}
+y_title <- "Log /*D. occidentalis*/ Counts"
+
 ### herbivory treatment significance analysis on D.occ counts ####
 herb3 <- ggplot(Tick_no0, aes(x = plot, y = log(1 + deoc), fill = plot)) +
   geom_boxplot() +
-  theme_bw() +
-  labs(x = 'Herbivory Treatment', y = 'Log D. occidentalis counts') +
-  xtitletheme + ytitletheme +
+  theme_bw() + ytitletheme +
+  labs(x = "Herbivory Treatment")+
+  xtitletheme + 
   scale_fill_manual(values = c('darkseagreen1', 'darkseagreen3', 'darkseagreen4')) +
   guides(fill = FALSE) +
   scale_x_discrete(breaks = c("Open", "Partial", "Total"),
@@ -169,31 +176,31 @@ herb3 <- herb3 + geom_signif(comparisons = list(c("Open", "Partial"), c("Open", 
                  map_signif_level = TRUE, textsize = 6, vjust = 0.2)
 
 ### test statistic visualization on graph, not sure if necessary - or if it makes it too "crowded" ###
-z_test_open_total <- 5.1
-p_value_open_total <- 0.001
+#z_test_open_total <- 5.1
+#p_value_open_total <- 0.001
 
-z_test_open_partial <- -4.4
-p_value_open_partial <- 0.001
+#z_test_open_partial <- -4.4
+#p_value_open_partial <- 0.001
 
-herb3 + annotate("text", x = Inf, y = Inf,
-                label = paste("z-statistic (CW vs. -CW) =", z_test_open_total),
-                hjust = 1.6, vjust = 4.5, size = 4, family = "Times New Roman") +
-        annotate("text", x = Inf, y = Inf,
-                 label = paste("p-value <", sprintf("%.3f", p_value_open_total)),
-                 hjust = 2.5, vjust = 6.1, size = 4, family = "Times New Roman") +
-        annotate("text", x = Inf, y = Inf,
-                label = paste("z-statistic (CW vs. W) =", z_test_open_partial),
-                hjust = 2.8, vjust = 4.5, size = 4, family = "Times New Roman") +
-        annotate("text", x = Inf, y = Inf,
-                 label = paste("p-value <", sprintf("%.3f", p_value_open_partial)),
-                 hjust = 4.7, vjust = 6.1, size = 4, family = "Times New Roman")
+#herb3 + annotate("text", x = Inf, y = Inf,
+ #               label = paste("z-statistic (CW vs. -CW) =", z_test_open_total),
+  #              hjust = 1.6, vjust = 4.5, size = 4, family = "Times New Roman") +
+   #     annotate("text", x = Inf, y = Inf,
+    #             label = paste("p-value <", sprintf("%.3f", p_value_open_total)),
+     #            hjust = 2.5, vjust = 6.1, size = 4, family = "Times New Roman") +
+      #  annotate("text", x = Inf, y = Inf,
+       #         label = paste("z-statistic (CW vs. W) =", z_test_open_partial),
+        #        hjust = 2.8, vjust = 4.5, size = 4, family = "Times New Roman") +
+        #annotate("text", x = Inf, y = Inf,
+         #        label = paste("p-value <", sprintf("%.3f", p_value_open_partial)),
+          #       hjust = 4.7, vjust = 6.1, size = 4, family = "Times New Roman")
 
 ### climate significance analysis on D.occ counts ####
 clim3 <- ggplot(Tick_no0, aes(x = site, y = log(1+deoc), fill = site)) +
   geom_boxplot() +
   theme_bw() +
   labs(x = 'Climate Level', y = 'Mean tick counts (2016 - 2019)') +
-  xtitletheme + ytitletheme +
+  xtitletheme + 
   scale_fill_manual(values = c('brown1', 'tan1', 'lightgoldenrod1')) +
   guides(fill = FALSE) +
   scale_x_discrete(breaks = c("Arid", "Intermediate", "Mesic"),
@@ -205,14 +212,14 @@ clim3 <- ggplot(Tick_no0, aes(x = site, y = log(1+deoc), fill = site)) +
 clim3 <- clim3 + geom_signif(comparisons = list(c("Arid", "Intermediate"), c("Intermediate", "Mesic"), c("Arid", "Mesic")), map_signif_level = TRUE, textsize = 6, vjust = 0.2)
 
 ### test statistic visualization on graph, not sure if necessary - or if it makes it too "crowded" ###
-z_test_arid_inter <- 9.4
-p_value_arid_inter <- 0.001
+#z_test_arid_inter <- 9.4
+#p_value_arid_inter <- 0.001
 
-z_test_inter_mesic <- -5.3
-p_value_inter_mesic <- 0.001
+#z_test_inter_mesic <- -5.3
+#p_value_inter_mesic <- 0.001
 
-z_test_arid_mesic <- 4.1
-p_value_arid_mesic <- 0.001
+#z_test_arid_mesic <- 4.1
+#p_value_arid_mesic <- 0.001
 
 #clim3 + annotate("text", x = Inf, y = Inf,
     #            label = paste("z-statistic (Arid vs. Inter.) =", z_test_arid_inter),
@@ -240,6 +247,50 @@ clim3 <- clim3 + theme(axis.title.y = element_blank()) + axisnumberstheme
 herb_clim_3 <- ggarrange(herb3, clim3, common.legend = TRUE, legend = "right", ncol = 2, align = "v")
 
 herb_clim_3
+
+### save image ###
+```
+
+
+
+## Appendix Figure(s) ##
+- tick counts be species
+```{r}
+### change to wide format ###
+Tick_wide <- gather(Tick, species, count, deoc:other, factor_key = TRUE)
+
+### make counts numeric ###
+Tick_wide$count <- as.numeric(Tick_wide$count)
+
+### group by and count up total for each species ###
+species_count <-Tick_wide %>%
+  group_by(species) %>%
+  filter(species != "other") %>%
+  tally(count) 
+
+### label species columns with full name instead of codename ###
+species_count$species <- factor(species_count$species, 
+                                levels = c("ipac", "deoc", "deva"), 
+                                labels = c("I. pacificus", "D. occidentalis", "D. variabilis"))
+
+### bar graph with species totals, shows how many D. occidentalis there are, compared to the two other captured species ###
+species1 <- ggplot(species_count, aes(x = reorder(species, -n), y = n, fill = species)) +
+  geom_bar(stat = "identity") +
+  theme_bw()+
+  labs(x = 'Tick Species', y = 'Tick counts (2016 - 2019)') +
+  xtitletheme + ytitletheme +
+  scale_fill_manual(values = c('gray4', 'darkorange3', 'firebrick')) +
+  guides(fill = FALSE)+
+  theme(
+  axis.text.x = element_text(face = "italic", family = "Times New Roman", size = 12),
+  axis.text.y = element_text(family = "Times New Roman", size = 12))
+
+```
+
+- counts by years post-exclosure construction, 2017, 2018, and 2019
+```{r}
+Tick <- read_csv(here("data_analyses", "Tejon_MeanComparisons_Dataset.csv"))
+
 
 ```
 

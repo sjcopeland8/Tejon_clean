@@ -316,7 +316,7 @@ anova(mod_2_3, mod_2_4) # mod4 better
 
 mod_2_5 <- glmer(deoc ~ site*year + offset(sampling_effort) + (1|month),
                  family = "poisson", 
-                 data = Tick)
+                 data = Tick) # failed to converge
 
 
 mod_2_6 <- glmer(deoc ~ site*year + offset(sampling_effort) +  (1|plotID),
@@ -328,11 +328,16 @@ AIC(mod_2_4, mod_2_5, mod_2_6) # mod4 still better
 ## Best fit model for this question
 summary(mod_2_4)
 
+summary(mod_2_4_2)
+
+summary(mod_2_3)
+
 # marginal = fixed factors, conditional = both fixed and random
 r.squaredGLMM(mod_2_4) # marginal = .31, conditional = .98
 
+r.squaredGLMM(mod_2_4_2) # marginal = .31, conditional = .98
 
-
+r.squaredGLMM(mod_2_3) # marginal = .29, conditions = .98
 ```
 
 ####Question 3: What are the effects of the interaction between herbivore grazing pressure and climate aridity treatments on D. occidentalis tick counts?
